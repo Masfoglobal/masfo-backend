@@ -84,6 +84,21 @@ def login():
     }, app.config["SECRET_KEY"], algorithm="HS256")
 
     return jsonify({"access_token": token})
+# =====================
+# ADMIN ROUTE - GET USERS
+# =====================
+@app.route("/api/users")
+@token_required
+def get_users(decoded):
+    if decoded["role"] != "admin":
+        return jsonify({"error": "Admin only"}), 403
+
+    users = User.query.all()
+    return jsonify([
+        {"id": u.id, "username": u.username, "role": u.role}
+        for u in users
+    ])
+
 
 # ===============================
 # ADMIN ROUTE
@@ -114,3 +129,20 @@ def protected(decoded):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+# =====================
+# DELETE USER
+# =====================
+@app.route("/api/users/<int:user_id>", methods=["DELETE"])
+@token_required
+def delete_user(decoded, user_id):
+    if decoded["role"] != "admin":
+        return jsonify({"error": "Admin only"}), 403
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({"message": "User deleted"})
