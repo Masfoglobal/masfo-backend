@@ -152,11 +152,13 @@ def profile(decoded):
         "state": user.state,
         "city": user.city
     })
-@app.route("/test-register")
-def test_register():
+@app.route("/create-admin")
+def create_admin():
     from models import User
-    from app import db
     from werkzeug.security import generate_password_hash
+
+    if User.query.filter_by(username="admin").first():
+        return "Admin already exists"
 
     user = User(
         username="admin",
@@ -168,4 +170,4 @@ def test_register():
     db.session.add(user)
     db.session.commit()
 
-    return "User created successfully!"
+    return "Admin created successfully"
