@@ -151,12 +151,13 @@ def profile(decoded):
         "state": user.state,
         "city": user.city
     })
-@app.route("/create-admin")
+@app.route("/api/create-admin")
 def create_admin():
     from models import User
     from werkzeug.security import generate_password_hash
-
-    if User.query.filter_by(username="admin").first():
+    
+    existing = User.query.filter_by(username="admin").first()
+    if existing:
         return "Admin already exists"
 
     user = User(
