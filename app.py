@@ -152,3 +152,20 @@ def profile(decoded):
         "state": user.state,
         "city": user.city
     })
+@app.route("/test-register")
+def test_register():
+    from models import User
+    from app import db
+    from werkzeug.security import generate_password_hash
+
+    user = User(
+        username="admin",
+        email="admin@masfo.com",
+        password=generate_password_hash("123456"),
+        role="admin"
+    )
+
+    db.session.add(user)
+    db.session.commit()
+
+    return "User created successfully!"
