@@ -50,12 +50,14 @@ def home():
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
-    if not data or "username" not in data or "password" not in data:
-        return jsonify({"error": "Missing data"}), 400
 
     hashed = generate_password_hash(data["password"])
+    user = User(
+        username=data["username"],
+        password=hashed,
+        role="admin"   # 👈 wannan layin muhimmi ne
+    )
 
-    user = User(username=data["username"], password=hashed)
     db.session.add(user)
     db.session.commit()
 
