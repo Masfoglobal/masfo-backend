@@ -1,0 +1,114 @@
+from flask import Flask, request, jsonify
+from config import Config
+from models import db, User
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
+import datetime
+from functools import wraps
+
+app = Flask(__name__)
+app.config.from_object(Config)
+
+CORS(app)
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+# ===============================
+# TOKEN DECORATOR
+# ===============================
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if not token:
+            return jsonify({"error": "Token missing"}), 401
+
+        try:
+            decoded = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+        except:
+            return jsonify({"error": "Invalid token"}), 401
+
+        return f(decoded, *args, **kwargs)
+    return decorated
+
+# ===============================
+# HOME
+# ===============================
+@app.route("/")
+def home():
+    return jsonify({
+        "status": "success",
+        "message": "Masfo Ultra Backend Running 🚀"
+    })
+
+# ===============================
+# REGISTER
+# ===============================
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.json
+    if not data or "username" not in data or "password" not in data:
+        return jsonify({"error": "Missing data"}), 400
+
+    hashed = generate_password_hash(data["password"])
+
+    user = User(username=data["username"], password=hashed)
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({"message": "User registered"}), 201
+
+# ===============================
+# LOGIN
+# ===============================
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.json
+    user = User.query.filter_by(username=data["username"]).first()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if not check_password_hash(user.password, data["password"]):
+        return jsonify({"error": "Wrong password"}), 401
+
+    token = jwt.encode({
+        "user_id": user.id,
+        "role": user.role,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    }, app.config["SECRET_KEY"], algorithm="HS256")
+
+    return jsonify({"access_token": token})
+
+# ===============================
+# ADMIN ROUTE
+# ===============================
+@app.route("/api/users")
+@token_required
+def get_users(decoded):
+    if decoded["role"] != "admin":
+        return jsonify({"error": "Admin only"}), 403
+
+    users = User.query.all()
+    return jsonify([
+        {"id": u.id, "username": u.username, "role": u.role}
+        for u in users
+    ])
+
+# ===============================
+# PROTECTED
+# ===============================
+@app.route("/api/protected")
+@token_required
+def protected(decoded):
+    return jsonify({
+        "message": "Access granted",
+        "user_id": decoded["user_id"],
+        "role": decoded["role"]
+    })
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
