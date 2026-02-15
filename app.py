@@ -99,22 +99,6 @@ def get_users(decoded):
         for u in users
     ])
 
-
-# ===============================
-# ADMIN ROUTE
-# ===============================
-@app.route("/api/users")
-@token_required
-def get_users(decoded):
-    if decoded["role"] != "admin":
-        return jsonify({"error": "Admin only"}), 403
-
-    users = User.query.all()
-    return jsonify([
-        {"id": u.id, "username": u.username, "role": u.role}
-        for u in users
-    ])
-
 # ===============================
 # PROTECTED
 # ===============================
