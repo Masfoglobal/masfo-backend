@@ -1,8 +1,8 @@
-flask
-flask_sqlalchemy
+Flask
+Flask-SQLAlchemy
+Flask-Cors
 psycopg2-binary
-pyjwt
+PyJWT
 gunicorn
 python-dotenv
-flask-cors
 werkzeug

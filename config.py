@@ -1,6 +1,10 @@
 import os
 
 class Config:
-    SECRET_KEY = "masfo_ultra_secure_key"
-    SQLALCHEMY_DATABASE_URI = "sqlite:///database.db"
+    SECRET_KEY = os.environ.get("SECRET_KEY", "masfo_ultra_secure_key")
+
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DATABASE_URL",
+        "sqlite:///database.db"
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
