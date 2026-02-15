@@ -10,7 +10,7 @@ from functools import wraps
 app = Flask(__name__)
 app.config.from_object(Config)
 
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 db.init_app(app)
 
 with app.app_context():
