@@ -146,3 +146,25 @@ def delete_user(decoded, user_id):
     db.session.commit()
 
     return jsonify({"message": "User deleted"})
+# ===============================
+# USER PROFILE
+# ===============================
+@app.route("/api/profile", methods=["GET"])
+@token_required
+def profile(decoded):
+
+    user = User.query.get(decoded["user_id"])
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "country": user.country,
+        "state": user.state,
+        "city": user.city
+    })
