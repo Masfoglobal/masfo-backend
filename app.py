@@ -82,6 +82,7 @@ def register():
 # ===============================
 @app.route("/api/login", methods=["POST"])
 def login():
+
     data = request.json
     user = User.query.filter_by(username=data["username"]).first()
 
@@ -98,8 +99,8 @@ def login():
     }, app.config["SECRET_KEY"], algorithm="HS256")
 
     return jsonify({
-    "access_token": token,
-    "role": user.role
+        "access_token": token,
+        "role": user.role
     })
 # =====================
 # ADMIN ROUTE - GET USERS
