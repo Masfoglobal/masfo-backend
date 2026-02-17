@@ -183,7 +183,7 @@ def create_admin():
         username="admin",
         email="admin@masfo.com",
         password=generate_password_hash("123456"),
-        role="admin"
+        role="user"
     )
 
     db.session.add(user)
@@ -201,3 +201,22 @@ def change_password(decoded):
     db.session.commit()
 
     return jsonify({"message":"Password updated"})
+@app.route("/setup-admin")
+def setup_admin():
+    from werkzeug.security import generate_password_hash
+    
+    existing = User.query.filter_by(username="admin").first()
+    if existing:
+        return "Admin already exists"
+
+    admin = User(
+        full_name="Super Admin",
+        username="admin",
+        password=generate_password_hash("admin123"),
+        role="admin"
+    )
+
+    db.session.add(admin)
+    db.session.commit()
+
+    return "Admin created"
