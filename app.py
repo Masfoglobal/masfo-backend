@@ -15,20 +15,18 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-# ===============================
+# ==========================================
 # TOKEN DECORATOR
-# ===============================
+# ==========================================
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-
         auth_header = request.headers.get("Authorization")
 
         if not auth_header:
             return jsonify({"error": "Token missing"}), 401
 
         try:
-            # cire Bearer idan yana nan
             if auth_header.startswith("Bearer "):
                 token = auth_header.split(" ")[1]
             else:
@@ -48,9 +46,11 @@ def token_required(f):
         return f(decoded, *args, **kwargs)
 
     return decorated
-# ===============================
+
+
+# ==========================================
 # HOME
-# ===============================
+# ==========================================
 @app.route("/")
 def home():
     return jsonify({
@@ -58,32 +58,47 @@ def home():
         "message": "Masfo Ultra Backend Running 🚀"
     })
 
-# ===============================
+
+# ==========================================
 # REGISTER
-# ===============================
+# ==========================================
 @app.route("/api/register", methods=["POST"])
 def register():
-    data = request.json
+    data = request.get_json()
+
+    if User.query.filter_by(username=data["username"]).first():
+        return jsonify({"error": "Username already exists"}), 400
+
+    if User.query.filter_by(email=data["email"]).first():
+        return jsonify({"error": "Email already exists"}), 400
 
     hashed = generate_password_hash(data["password"])
+
     user = User(
         username=data["username"],
+        email=data["email"],
         password=hashed,
-        role="admin"   # 👈 wannan layin muhimmi ne
+        full_name=data.get("full_name"),
+        phone=data.get("phone"),
+        country=data.get("country"),
+        state=data.get("state"),
+        city=data.get("city"),
+        role="user"
     )
 
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({"message": "User registered"}), 201
+    return jsonify({"message": "User registered successfully"}), 201
 
-# ===============================
+
+# ==========================================
 # LOGIN
-# ===============================
+# ==========================================
 @app.route("/api/login", methods=["POST"])
 def login():
+    data = request.get_json()
 
-    data = request.json
     user = User.query.filter_by(username=data["username"]).first()
 
     if not user:
@@ -102,45 +117,43 @@ def login():
         "access_token": token,
         "role": user.role
     })
-# =====================
-# ADMIN ROUTE - GET USERS
-# =====================
-@app.route("/api/users")
+
+
+# ==========================================
+# GET ALL USERS (ADMIN ONLY)
+# ==========================================
+@app.route("/api/users", methods=["GET"])
 @token_required
 def get_users(decoded):
+
     if decoded["role"] != "admin":
         return jsonify({"error": "Admin only"}), 403
 
     users = User.query.all()
+
     return jsonify([
-        {"id": u.id, "username": u.username, "role": u.role}
+        {
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "role": u.role
+        }
         for u in users
     ])
 
-# ===============================
-# PROTECTED
-# ===============================
-@app.route("/api/protected")
-@token_required
-def protected(decoded):
-    return jsonify({
-        "message": "Access granted",
-        "user_id": decoded["user_id"],
-        "role": decoded["role"]
-    })
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-# =====================
-# DELETE USER
-# =====================
+# ==========================================
+# DELETE USER (ADMIN ONLY)
+# ==========================================
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
 @token_required
 def delete_user(decoded, user_id):
+
     if decoded["role"] != "admin":
         return jsonify({"error": "Admin only"}), 403
 
     user = User.query.get(user_id)
+
     if not user:
         return jsonify({"error": "User not found"}), 404
 
@@ -148,9 +161,11 @@ def delete_user(decoded, user_id):
     db.session.commit()
 
     return jsonify({"message": "User deleted"})
-# ===============================
+
+
+# ==========================================
 # USER PROFILE
-# ===============================
+# ==========================================
 @app.route("/api/profile", methods=["GET"])
 @token_required
 def profile(decoded):
@@ -163,6 +178,7 @@ def profile(decoded):
     return jsonify({
         "id": user.id,
         "username": user.username,
+        "email": user.email,
         "role": user.role,
         "full_name": user.full_name,
         "phone": user.phone,
@@ -170,41 +186,30 @@ def profile(decoded):
         "state": user.state,
         "city": user.city
     })
-@app.route("/api/create-admin")
-def create_admin():
-    from models import User
-    from werkzeug.security import generate_password_hash
-    
-    existing = User.query.filter_by(username="admin").first()
-    if existing:
-        return "Admin already exists"
 
-    user = User(
-        username="admin",
-        email="admin@masfo.com",
-        password=generate_password_hash("123456"),
-        role="user"
-    )
 
-    db.session.add(user)
-    db.session.commit()
-
-    return "Admin created successfully"
+# ==========================================
+# CHANGE PASSWORD
+# ==========================================
 @app.route("/api/change-password", methods=["PUT"])
 @token_required
 def change_password(decoded):
+
     user = User.query.get(decoded["user_id"])
-
     data = request.get_json()
-    user.password = generate_password_hash(data["password"])
 
+    user.password = generate_password_hash(data["password"])
     db.session.commit()
 
-    return jsonify({"message":"Password updated"})
+    return jsonify({"message": "Password updated successfully"})
+
+
+# ==========================================
+# CREATE FIRST ADMIN (RUN ONCE)
+# ==========================================
 @app.route("/setup-admin")
 def setup_admin():
-    from werkzeug.security import generate_password_hash
-    
+
     existing = User.query.filter_by(username="admin").first()
     if existing:
         return "Admin already exists"
@@ -212,6 +217,7 @@ def setup_admin():
     admin = User(
         full_name="Super Admin",
         username="admin",
+        email="admin@masfo.com",
         password=generate_password_hash("admin123"),
         role="admin"
     )
@@ -219,4 +225,11 @@ def setup_admin():
     db.session.add(admin)
     db.session.commit()
 
-    return "Admin created"
+    return "Admin created successfully"
+
+
+# ==========================================
+# RUN APP (VERY LAST)
+# ==========================================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
