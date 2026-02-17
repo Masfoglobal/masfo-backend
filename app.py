@@ -190,3 +190,14 @@ def create_admin():
     db.session.commit()
 
     return "Admin created successfully"
+@app.route("/api/change-password", methods=["PUT"])
+@token_required
+def change_password(decoded):
+    user = User.query.get(decoded["user_id"])
+
+    data = request.get_json()
+    user.password = generate_password_hash(data["password"])
+
+    db.session.commit()
+
+    return jsonify({"message":"Password updated"})
