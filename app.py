@@ -99,12 +99,21 @@ def register():
 def login():
     data = request.get_json()
 
-    user = User.query.filter_by(username=data["username"]).first()
+    if not data:
+        return jsonify({"error": "No input data provided"}), 400
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"error": "Username and password required"}), 400
+
+    user = User.query.filter_by(username=username).first()
 
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    if not check_password_hash(user.password, data["password"]):
+    if not check_password_hash(user.password, password):
         return jsonify({"error": "Wrong password"}), 401
 
     token = jwt.encode({
@@ -117,8 +126,6 @@ def login():
         "access_token": token,
         "role": user.role
     })
-
-
 # ==========================================
 # GET ALL USERS (ADMIN ONLY)
 # ==========================================
