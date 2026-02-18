@@ -7,6 +7,7 @@ import jwt
 import datetime
 from functools import wraps
 from routes import routes
+from auth import token_required
 
 app = Flask(__name__)   # ⚡ Create app FIRST
 
