@@ -6,14 +6,19 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 from functools import wraps
+from routes import routes
 
-app = Flask(__name__)
+app = Flask(__name__)   # ⚡ Create app FIRST
+
 app.config.from_object(Config)
 CORS(app)
+
 db.init_app(app)
+
+app.register_blueprint(routes)   # ⚡ Register AFTER app created
+
 with app.app_context():
     db.create_all()
-
 # ==========================================
 # TOKEN DECORATOR
 # ==========================================
