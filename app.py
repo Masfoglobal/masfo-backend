@@ -96,35 +96,30 @@ def register():
 # ==========================================
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "No input data provided"}), 400
+        user = User.query.filter_by(username=data["username"]).first()
 
-    username = data.get("username")
-    password = data.get("password")
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-    if not username or not password:
-        return jsonify({"error": "Username and password required"}), 400
+        if not check_password_hash(user.password, data["password"]):
+            return jsonify({"error": "Wrong password"}), 401
 
-    user = User.query.filter_by(username=username).first()
+        token = jwt.encode({
+            "user_id": user.id,
+            "role": user.role,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        }, app.config["SECRET_KEY"], algorithm="HS256")
 
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+        return jsonify({
+            "access_token": token,
+            "role": user.role
+        })
 
-    if not check_password_hash(user.password, password):
-        return jsonify({"error": "Wrong password"}), 401
-
-    token = jwt.encode({
-        "user_id": user.id,
-        "role": user.role,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-    }, app.config["SECRET_KEY"], algorithm="HS256")
-
-    return jsonify({
-        "access_token": token,
-        "role": user.role
-    })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 # ==========================================
 # GET ALL USERS (ADMIN ONLY)
 # ==========================================
