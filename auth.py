@@ -6,6 +6,7 @@ from models import User
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+
         auth_header = request.headers.get("Authorization")
 
         if not auth_header:
@@ -17,21 +18,15 @@ def token_required(f):
             else:
                 return jsonify({"error": "Invalid token format"}), 401
 
-            data = jwt.decode(
+            decoded = jwt.decode(
                 token,
                 current_app.config["SECRET_KEY"],
                 algorithms=["HS256"]
             )
 
-            # ✅ WANNAN KA MANTA
-            current_user = User.query.get(data["user_id"])
-
-            if not current_user:
-                return jsonify({"error": "User not found"}), 401
-
         except Exception:
             return jsonify({"error": "Token invalid"}), 401
 
-        return f(current_user, *args, **kwargs)
+        return f(decoded, *args, **kwargs)
 
     return decorated
