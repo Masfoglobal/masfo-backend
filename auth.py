@@ -1,8 +1,7 @@
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 import jwt
 from models import User
-from config import Config
 
 def token_required(f):
     @wraps(f)
@@ -18,7 +17,13 @@ def token_required(f):
             else:
                 return jsonify({"error": "Invalid token format"}), 401
 
-            data = jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
+            data = jwt.decode(
+                token,
+                current_app.config["SECRET_KEY"],
+                algorithms=["HS256"]
+            )
+
+            # ✅ WANNAN KA MANTA
             current_user = User.query.get(data["user_id"])
 
             if not current_user:
