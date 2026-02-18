@@ -19,40 +19,6 @@ app.register_blueprint(routes)   # ⚡ Register AFTER app created
 
 with app.app_context():
     db.create_all()
-# ==========================================
-# TOKEN DECORATOR
-# ==========================================
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get("Authorization")
-
-        if not auth_header:
-            return jsonify({"error": "Token missing"}), 401
-
-        try:
-            if auth_header.startswith("Bearer "):
-                token = auth_header.split(" ")[1]
-            else:
-                token = auth_header
-
-            decoded = jwt.decode(
-                token,
-                app.config["SECRET_KEY"],
-                algorithms=["HS256"]
-            )
-
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token expired"}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token"}), 401
-
-        return f(decoded, *args, **kwargs)
-
-    return decorated
-
-
-# ==========================================
 # HOME
 # ==========================================
 @app.route("/")

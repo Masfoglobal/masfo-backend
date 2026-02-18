@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db
 from models import Post
+from auth import token_required
 
 routes = Blueprint("routes", __name__)
 
